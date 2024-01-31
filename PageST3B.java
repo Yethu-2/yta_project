@@ -156,29 +156,27 @@ public class PageST3B implements Handler {
     //     </script>
     // """);
     
-
-
-        
-        html.append("""
+    html.append("""
                         </select>
                     </div>
                     
     
                     <p>
                         <label class="w3-text-brown w3-round-large"><b>Starting Year</b></label>
-                        <input  type="number" id="start_year" name="start_year" class="w3-input w3-round-large w3-border w3-sand" min="1960" max="2015" placeholder="1960"><br>
+                        <input  type="number" id="start_year" name="start_year" class="w3-input w3-round-large w3-border w3-sand" min="1960" max="2015" placeholder="1960" value="1970"><br>
                     </p>
                     <p>
                         <label class="w3-text-brown w3-round-large"><b>Ending Year</b></label>
-                        <input  type="number" id="end_year" name="end_year" class="w3-input w3-border w3-round-large w3-sand" min="1960" max="2015" placeholder="1960"><br>
+                        <input  type="number" id="end_year" name="end_year" class="w3-input w3-border w3-round-large w3-sand" min="1960" max="2015" placeholder="1960" value="2015"><br>
                     </p>
                     <p>
                         <label class="w3-text-brown w3-round-large"><b>Filtered By</b></label>
-                        <select class="w3-input w3-border  w3-round-large w3-sand" id="region" name="region">
-                            <option value="saab">Temperature</option>
-                            <option value="fiat">Population</option>
-                            <option value="audi">Both</option>
+                        <select class="w3-input w3-border w3-sand" id='Temp_filter' name='Temp_filter' value ='Temp_filter'>
+                        <option selected>Temperature</option>
+                        <option selected>Population</option>
+                        <option selected>Both</option>
                         </select>
+
                     </p>
                    
                     <input class="w3-radio" type="radio" name="gender" value="absolute" checked>
@@ -213,7 +211,10 @@ public class PageST3B implements Handler {
         // Add Div for page Content
         html.append(" </div>");
         html.append("<div class=\"w3-card-3 w3-round w3-ios-deep-blue \" id='pannel'>");
-    
+
+
+/*Displaying Data Table */
+
         String countryDropdown = context.formParam("country_dropdown");
         String startyear = context.formParam("start_year");
         String endyear = context.formParam("end_year");
@@ -221,11 +222,22 @@ public class PageST3B implements Handler {
             String queryResult = getSimilarityData(countryDropdown,startyear,endyear);
             html.append(queryResult);
         }
-        String cityDropdown = context.formParam("city_dropdown");
-        if (cityDropdown != null) {
-            String queryResult = getSimilarCityData(cityDropdown);
-            html.append(queryResult);
+         String cityDropdown = context.formParam("city_dropdown");
+        //  if (cityDropdown != null) {
+        //     String queryResult = getSimilarCityData(cityDropdown,startyear,endyear);
+        //     html.append(queryResult);
+        // }
+        String filterdata = context.formParam("Temp_filter");
+
+        if ("Temperature".equals(filterdata)) {  // Use equals method for string comparison
+        String queryResult = getSimilarCityData(cityDropdown, startyear, endyear);
+        html.append(queryResult);
         }
+        if ("Both".equals(filterdata)) {  // Use equals method for string comparison
+            String queryResult = getSimilarCityData(cityDropdown, startyear, endyear);
+            html.append(queryResult);
+}
+
     
 
         html.append("</div>");
@@ -296,35 +308,35 @@ public class PageST3B implements Handler {
         return countries;
     }
 
-    public String outputCountry(String country) {
-        StringBuilder html = new StringBuilder();
-        html.append("<h2>").append(country).append(" Population from 1971 to 1975</h2>");
+    // public String outputCountry(String country) {
+    //     StringBuilder html = new StringBuilder();
+    //     html.append("<h2>").append(country).append(" Population from 1971 to 1975</h2>");
 
-        ArrayList<String> countryName = getPopulationbyCountry(country);
+    //     ArrayList<String> countryName = getPopulationbyCountry(country);
 
-        html.append("<ul>");
-        for (String name : countryName) {
-            html.append("<li>").append(name).append(" ").append("</li>");
-        }
-        html.append("</ul>");
+    //     html.append("<ul>");
+    //     for (String name : countryName) {
+    //         html.append("<li>").append(name).append(" ").append("</li>");
+    //     }
+    //     html.append("</ul>");
 
-        JDBCConnection jdbc = new JDBCConnection();
-        ArrayList<Population> populations = jdbc.getPopulationbyCountry(country);
+    //     JDBCConnection jdbc = new JDBCConnection();
+    //     ArrayList<Population> populations = jdbc.getPopulationbyCountry(country);
 
-        html.append("<h2>")
-                .append(country)
-                .append(" Population with Years (from JDBCConnection)</h2>")
-                .append("<ul>");
-        for (Population population : populations) {
-            html.append("<li>")
-                    .append("Population of ").append(population.Countryname)
-                    .append(" was ").append(population.populationbyYear)
-                    .append(" in ").append(population.CountryCode).append("</li>");
-        }
-        html.append("</ul>");
+    //     html.append("<h2>")
+    //             .append(country)
+    //             .append(" Population with Years (from JDBCConnection)</h2>")
+    //             .append("<ul>");
+    //     for (Population population : populations) {
+    //         html.append("<li>")
+    //                 .append("Population of ").append(population.Countryname)
+    //                 .append(" was ").append(population.populationbyYear)
+    //                 .append(" in ").append(population.CountryCode).append("</li>");
+    //     }
+    //     html.append("</ul>");
 
-        return html.toString();
-    }
+    //     return html.toString();
+    // }
     
 
     public ArrayList<String> getPopulationbyCountry(String countrynames) {
@@ -430,7 +442,7 @@ public class PageST3B implements Handler {
 
     return resultHtml.toString();
 }
-public String getSimilarCityData(String selectedCity) {
+public String getSimilarCityData(String selectedCity,String startyear,String endyear ) {
     StringBuilder resultHtml = new StringBuilder();
     try (Connection connection = DriverManager.getConnection(JDBCConnection.DATABASE2)) {
         String query = "SELECT " +
@@ -447,7 +459,7 @@ public String getSimilarCityData(String selectedCity) {
                "  GlobalYearlyLandTempByCity t2 ON t1.city <> t2.city " +
                "                                AND t1.year = t2.year " +
                "                                AND t1.city = ? " +
-               "                                AND t1.year BETWEEN 1970 AND 1975 " +
+               "                                AND t1.year BETWEEN ? AND ? " +
                "ORDER BY " +
                "  selected_location, " +
                "  selected_year, " +
@@ -456,9 +468,11 @@ public String getSimilarCityData(String selectedCity) {
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, selectedCity);
+            preparedStatement.setString(2, startyear);
+            preparedStatement.setString(3, endyear);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 resultHtml.append("<div class=\"w3-container\">")
-                        .append("<h2 class=\"datadisplay\" >Similar Cities from 1970 to 1975</h2>")
+                        .append("<h2 class=\"datadisplay\" >Similar Cities from " + startyear + " to " +endyear+ "</h2>")
                         .append("<table class=\"w3-table-all\">")
                         .append("<thead>")
                         .append("<tr class=\"w3-green\">")
