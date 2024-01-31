@@ -179,15 +179,14 @@ public class PageST3B implements Handler {
 
                     </p>
                    
-                    <input class="w3-radio" type="radio" name="gender" value="absolute" checked>
+                        <input class="w3-radio" type="radio" id='filter_2' name="filter_2" value="absolute" checked>
                     <label class="w3-text-brown">Absolute Value</label>
                     <p>
-                    <input class="w3-radio" type="radio" name="gender" value="female">
-                    <label class="w3-text-brown">Relative Value</label>
+                    <input class="w3-radio" type="radio" id='filter_2' name="filter_2" value="Relative">
+                    <label class="w3-text-brown">Relative Value</label></br>
+                
                     <p>
-                    
-                    <p>
-                        <button class="w3-btn w3-blue w3-round-large">Submit</button><br>
+                        <button id='submit' class="w3-btn w3-blue w3-round-large">Submit</button><br>
                     </p>
                 </form>
                 <div class="w3-card-3"><br>
@@ -219,9 +218,9 @@ public class PageST3B implements Handler {
         String startyear = context.formParam("start_year");
         String endyear = context.formParam("end_year");
         if (countryDropdown != null) {
-            String queryResult = getSimilarityData(countryDropdown,startyear,endyear);
+            String queryResult = getSimilarityData2(countryDropdown,startyear,endyear);
             html.append(queryResult);
-        }
+         }
          String cityDropdown = context.formParam("city_dropdown");
         //  if (cityDropdown != null) {
         //     String queryResult = getSimilarCityData(cityDropdown,startyear,endyear);
@@ -236,7 +235,13 @@ public class PageST3B implements Handler {
         if ("Both".equals(filterdata)) {  // Use equals method for string comparison
             String queryResult = getSimilarCityData(cityDropdown, startyear, endyear);
             html.append(queryResult);
-}
+        }
+        String filter2 = context.formParam("filter_2");
+        if ("Relative".equals(filter2)) {  // Use equals method for string comparison
+            String queryResult = getSimilarityData(countryDropdown, startyear, endyear);
+            html.append(queryResult);
+        }
+        
 
     
 
@@ -375,7 +380,8 @@ public class PageST3B implements Handler {
 
         return countries;
     }
-    public String getSimilarityData(String selectedCountry, String startyear,String endyear) {
+    //without percentage
+    public String getSimilarityData2(String selectedCountry, String startyear,String endyear) {
         StringBuilder resultHtml = new StringBuilder();
     try (Connection connection = DriverManager.getConnection(JDBCConnection.DATABASE2)) {
         String query = "SELECT DISTINCT" +
@@ -442,6 +448,78 @@ public class PageST3B implements Handler {
 
     return resultHtml.toString();
 }
+
+public String getSimilarityData(String selectedCountry, String startyear, String endyear) {
+    StringBuilder resultHtml = new StringBuilder();
+    try (Connection connection = DriverManager.getConnection(JDBCConnection.DATABASE2)) {
+        String query = "SELECT DISTINCT" +
+                "  p1.countryname AS selected_country, " +
+                "  p1.year AS selected_year, " +
+                "  p1.population AS selected_population, " +
+                "  p2.countryname AS similar_country, " +
+                "  p2.year AS similar_year, " +
+                "  p2.population AS similar_population, " +
+                "  ABS(p1.population - p2.population) AS population_difference, " +
+                "  ROUND(((p1.population - p2.population) * 100.0 / p1.population), 2) AS population_percentage " +
+                "FROM " +
+                "  populationdata p1 " +
+                "JOIN " +
+                "  populationdata p2 ON p1.countryname <> p2.countryname " +
+                "                    AND p1.year = p2.year " +
+                "                    AND p1.countryname = ? " +
+                "                    AND p1.year BETWEEN ? AND ?" +
+                "                    AND p1.countryname < p2.countryname " +
+                "ORDER BY " +
+                "  population_difference ASC " +
+                "LIMIT 10";
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, selectedCountry);
+            preparedStatement.setString(2, startyear);
+            preparedStatement.setString(3, endyear);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                resultHtml.append("<div class=\"w3-container\">")
+                        .append("<h2 class='datadisplay'>Relative Data Similar Countries from " + startyear + " to " + endyear + " </h2>")
+                        .append("<table class=\"w3-table-all\">")
+                        .append("<thead>")
+                        .append("<tr class=\"w3-green\">")
+                        .append("<th>Selected Country</th>")
+                        .append("<th>Selected Year</th>")
+                        .append("<th>Selected Population</th>")
+                        .append("<th>Similar Country</th>")
+                        .append("<th>Similar Year</th>")
+                        .append("<th>Similar Population</th>")
+                        .append("<th>Population Difference</th>")
+                        .append("<th>Population Percentage Difference</th>")
+                        .append("</tr>")
+                        .append("</thead>");
+
+                while (resultSet.next()) {
+                    resultHtml.append("<tr>")
+                            .append("<td>").append(resultSet.getString("selected_country")).append("</td>")
+                            .append("<td>").append(resultSet.getInt("selected_year")).append("</td>")
+                            .append("<td>").append(resultSet.getLong("selected_population")).append("</td>")
+                            .append("<td>").append(resultSet.getString("similar_country")).append("</td>")
+                            .append("<td>").append(resultSet.getInt("similar_year")).append("</td>")
+                            .append("<td>").append(resultSet.getLong("similar_population")).append("</td>")
+                            .append("<td>").append(resultSet.getLong("population_difference")).append("</td>")
+                            .append("<td>").append(resultSet.getDouble("population_percentage")).append("%</td>")
+                            .append("</tr>");
+                }
+
+                resultHtml.append("</table>")
+                        .append("</div>");
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        resultHtml.append("<p>Error retrieving data</p>");
+    }
+
+    return resultHtml.toString();
+}
+
+    
 public String getSimilarCityData(String selectedCity,String startyear,String endyear ) {
     StringBuilder resultHtml = new StringBuilder();
     try (Connection connection = DriverManager.getConnection(JDBCConnection.DATABASE2)) {
