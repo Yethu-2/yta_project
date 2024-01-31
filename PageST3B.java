@@ -90,16 +90,16 @@ public class PageST3B implements Handler {
 
         html.append("""
            
-            <div class="w3-card-4">
+            <div class="w3-card w3-hover-shadow">
             <form action='/page3B.html' method='post'>
-                <div class="w3-container w3-blue">
+                <div id="checker" class="w3-container w3-blue">
                     <h2>Similarity Checker</h2>
-                </div>
+                </br></div>
                         
                         """);
         // Add Div for page Content
         html.append("""
-            <div class='w3-input w3-border w3-sand'>
+            <div class='w3-input w3-border w3-sand w3-round-large'>
                 <label class="w3-text-brown"><b>Select Country</b></label>
                 <select class="w3-input w3-border w3-sand" id='country_dropdown' name='country_dropdown'>
     """);
@@ -120,12 +120,12 @@ public class PageST3B implements Handler {
             </div>
             <div>
                 <p></p>
-            <div><p>
+            <div><p></p>
                 
-                <button class="w3-btn w3-blue w3-round-large" onclick="findCities()">Find Sub Regions</button></p>
+                <button class="w3-btn w3-blue w3-round-large" id="btn-find" onclick="findCities()">Find Sub Regions</button></br>
             </div>
-            <div class='w3-input w3-border w3-sand'>
-                <label class="w3-text-brown"><b>Select Region</b></label>
+            <div class='w3-input w3-border w3-sand w3-round-large'>
+                <label class="w3-text-brown w3-round-large"><b>Select Region</b></label>
                 <select class="w3-input w3-border w3-sand" id='city_dropdown' name='city_dropdown' value ='city_dropdown'>
     """);
     
@@ -165,16 +165,16 @@ public class PageST3B implements Handler {
                     
     
                     <p>
-                        <label class="w3-text-brown"><b>Starting Year</b></label>
-                        <input type="number" id="startyear" class="w3-input w3-border w3-sand" min="1960" max="2015" placeholder="1960"><br>
+                        <label class="w3-text-brown w3-round-large"><b>Starting Year</b></label>
+                        <input  type="number" id="start_year" name="start_year" class="w3-input w3-round-large w3-border w3-sand" min="1960" max="2015" placeholder="1960"><br>
                     </p>
                     <p>
-                        <label class="w3-text-brown"><b>Ending Year</b></label>
-                        <input type="number" id="endyear" class="w3-input w3-border w3-sand" min="1960" max="2015" placeholder="1960"><br>
+                        <label class="w3-text-brown w3-round-large"><b>Ending Year</b></label>
+                        <input  type="number" id="end_year" name="end_year" class="w3-input w3-border w3-round-large w3-sand" min="1960" max="2015" placeholder="1960"><br>
                     </p>
                     <p>
-                        <label class="w3-text-brown"><b>Filtered By</b></label>
-                        <select class="w3-input w3-border w3-sand" id="region" name="region">
+                        <label class="w3-text-brown w3-round-large"><b>Filtered By</b></label>
+                        <select class="w3-input w3-border  w3-round-large w3-sand" id="region" name="region">
                             <option value="saab">Temperature</option>
                             <option value="fiat">Population</option>
                             <option value="audi">Both</option>
@@ -215,8 +215,10 @@ public class PageST3B implements Handler {
         html.append("<div class=\"w3-card-3 w3-round w3-ios-deep-blue \" id='pannel'>");
     
         String countryDropdown = context.formParam("country_dropdown");
+        String startyear = context.formParam("start_year");
+        String endyear = context.formParam("end_year");
         if (countryDropdown != null) {
-            String queryResult = getSimilarityData(countryDropdown);
+            String queryResult = getSimilarityData(countryDropdown,startyear,endyear);
             html.append(queryResult);
         }
         String cityDropdown = context.formParam("city_dropdown");
@@ -361,10 +363,10 @@ public class PageST3B implements Handler {
 
         return countries;
     }
-    public String getSimilarityData(String selectedCountry) {
+    public String getSimilarityData(String selectedCountry, String startyear,String endyear) {
         StringBuilder resultHtml = new StringBuilder();
     try (Connection connection = DriverManager.getConnection(JDBCConnection.DATABASE2)) {
-        String query = "SELECT " +
+        String query = "SELECT DISTINCT" +
                "  p1.countryname AS selected_country, " +
                "  p1.year AS selected_year, " +
                "  p1.population AS selected_population, " +
@@ -376,18 +378,21 @@ public class PageST3B implements Handler {
                "  populationdata p1 " +
                "JOIN " +
                "  populationdata p2 ON p1.countryname <> p2.countryname " +
+               "                    AND p1.year = p2.year " +
                "                    AND p1.countryname = ? " +
-               "                    AND p1.year BETWEEN 1970 AND 1975 " +
+               "                    AND p1.year BETWEEN ? AND ?" +
                "                    AND p1.countryname < p2.countryname " +
                "ORDER BY " +
-               "  population_difference, similar_country ASC " +
-               "LIMIT 5";
+               "  population_difference ASC " +
+               "LIMIT 10";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, selectedCountry);
+            preparedStatement.setString(2, startyear);
+            preparedStatement.setString(3, endyear);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 resultHtml.append("<div class=\"w3-container\">")
-                        .append("<h2 class='datadisplay'>Similar Countries from 1970 to 1975</h2>")
+                        .append("<h2 class='datadisplay'>Similar Countries from " + startyear + " to " +endyear+" </h2>")
                         .append("<table class=\"w3-table-all\">")
                         .append("<thead>")
                         .append("<tr class=\"w3-green\">")
